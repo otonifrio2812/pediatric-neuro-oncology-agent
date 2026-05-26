@@ -2,6 +2,46 @@
 
 A runnable hackathon project for an autonomous long-agent workflow for pediatric neuro-oncology pre-operative MDT planning.
 
+## Architecture
+
+```mermaid
+flowchart TD
+    S1["1. De-identification<br/>(PHI regex scrub)"]
+    S2["2. Medical Imaging — optional dual path<br/>JPG / PNG → Nemotron Nano Omni VLM<br/>DICOM / NIfTI → SAFE_MODE (preprocessing only, default ON)"]
+    S3["3. Completeness Check"]
+    S4["4. RAG Evidence Retrieval<br/>(TF-IDF + auto-picks refreshed PubMed / ClinicalTrials.gov)"]
+    S5["5. NEMOTRON 3 SUPER<br/>CORE REASONING ENGINE<br/>(NVIDIA hosted; deterministic MOCK fallback when no API key)"]
+    S6["6. Clinical Trial Matching<br/>(age + tumor type + molecular markers)"]
+    S7["7. Drug Sensitivity Ranking (ML model, GDSC2 cell lines)<br/>KNS-42 OFF-DIST surrogate for DMG<br/>Medulloblastoma / Ependymoma → SKIPPED (clinical-safety policy)"]
+    S8["8. Guardrails (7 policies)<br/>incl. Policy 7: drug-section preclinical disclaimers"]
+    S9["9. MDT Report Generation (Markdown)"]
+
+    Loop["Autonomous Refresh Loop<br/>PubMed E-utilities + ClinicalTrials.gov v2 API<br/>every N hours (default 6h)<br/>--offline mode for demo resilience"]
+
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    S6 --> S7
+    S7 --> S8
+    S8 --> S9
+
+    Loop -.->|"feeds new evidence"| S4
+
+    classDef core fill:#FCE8E6,stroke:#D33B27,stroke-width:3px,color:#000
+    classDef guard fill:#F3E8FD,stroke:#7E57C2,stroke-width:2px,color:#000
+    classDef loop fill:#E6F4EA,stroke:#1E8E3E,stroke-width:2px,color:#000
+    classDef dual fill:#FEF7E0,stroke:#F9AB00,stroke-width:2px,color:#000
+
+    class S5 core
+    class S8 guard
+    class Loop loop
+    class S2 dual
+```
+
+> Static high-resolution version: [`assets/architecture.png`](assets/architecture.png)
+
 ## Core design
 
 Nemotron 3 Super is the core clinical reasoning model. Other modules are upstream tools:
