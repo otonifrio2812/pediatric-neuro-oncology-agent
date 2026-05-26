@@ -42,6 +42,17 @@ flowchart TD
 
 > Static high-resolution version: [`assets/architecture.png`](assets/architecture.png)
 
+## What's in this agent
+
+- **9-step autonomous pipeline** orchestrated end-to-end without human intervention.
+- **NVIDIA models used:**
+  - `nvidia/nemotron-3-super-120b-a12b` — core clinical text reasoning (Step 5 of the pipeline).
+  - `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` — optional vision-language model for JPG/PNG imaging input (Step 2).
+- **Safety-first surrogate logic** for the drug-ranking ML model: DMG / H3K27M cases use KNS-42 with an explicit OFF-DISTRIBUTION warning; medulloblastoma / ependymoma cases are explicitly **skipped** (no fallback to an unrelated cell line — clinical-safety policy).
+- **7 medical guardrail policies** (PHI scrub, no definitive diagnosis, no prescription orders, imaging disclaimer, evidence disclosure, high-risk anatomy flags, drug-section preclinical disclaimer).
+- **Autonomous evidence refresh** from PubMed + ClinicalTrials.gov, flowing into RAG automatically.
+- **Demo-resilient by design:** runs without an API key (MOCK Nemotron fallback), without network (`--offline` mode), and without the drug model artifacts (graceful "artifacts unavailable" message — the rest of the pipeline still completes).
+
 ## Core design
 
 Nemotron 3 Super is the core clinical reasoning model. Other modules are upstream tools:
@@ -70,22 +81,63 @@ Then it extracts to:
 /content/pediatric-neuro-oncology-agent
 ```
 
-## Local quick start
+## 5-minute quick start (no API key, no setup required)
+
+This project ships with a MOCK Nemotron fallback, so the pipeline always runs end-to-end — no credentials, no model artifacts, no network needed for the baseline demo.
 
 ```bash
+git clone https://github.com/otonifrio2812/pediatric-neuro-oncology-agent.git
+cd pediatric-neuro-oncology-agent
 pip install -r requirements.txt
 python agent/run_demo.py sample_cases/case_003_diffuse_midline_glioma.txt
 ```
 
-Without `NVIDIA_API_KEY`, the project runs in MOCK mode. With an API key:
+**What you'll see** (console tail):
+
+```
+Reasoning mode: MOCK Nemotron (nvidia/nemotron-3-super-120b-a12b)
+Report written: outputs/case_report_<timestamp>.md
+
+# Pediatric Neuro-Oncology Surgical Planning MDT Report
+...
+```
+
+The console previews the first ~4000 chars of the generated MDT report. The full report is in `outputs/case_report_<timestamp>.md` and contains 8 numbered sections + a "Preclinical Drug Ranking" appendix (showing a graceful "unavailable" message until you run the optional drug setup — see below) + an "Agent Architecture" appendix.
+
+> `Reasoning mode: MOCK Nemotron (...)` is **intentional** when `NVIDIA_API_KEY` is not set — the deterministic mock fallback is what makes the demo always work. Set the API key (next section) to swap in the live Nemotron endpoint.
+
+### Two sample cases bundled
+
+| Case file | Tumor | What it exercises |
+|---|---|---|
+| `sample_cases/case_003_diffuse_midline_glioma.txt` | DMG (H3 K27M, pons, age 8) | Drug ranking → KNS-42 surrogate with **OFF-DISTRIBUTION** warning |
+| `sample_cases/demo_case_medulloblastoma.json` | Medulloblastoma (vermis, age 6) | Drug ranking **skipped** — clinical-safety policy (no MB cell line in the model) |
+
+Both `.txt` (narrative) and `.json` (structured) case files are accepted by `run_demo.py`.
+
+## Optional: enable the real NVIDIA Nemotron API
 
 ```bash
 export NVIDIA_API_KEY="nvapi-..."
-export NEMOTRON_MODEL="nvidia/nemotron-3-super-120b-a12b"
+export NEMOTRON_MODEL="nvidia/nemotron-3-super-120b-a12b"   # default
 python agent/run_demo.py sample_cases/case_003_diffuse_midline_glioma.txt
 ```
 
-## DICOM / NIfTI advanced imaging
+With a key, Step 5 of the pipeline calls the NVIDIA-hosted Nemotron endpoint. Without one, the MOCK reasoner runs and still produces a well-formed report — both paths exercise the full 9-step pipeline.
+
+## Optional: enable drug-sensitivity ranking (ML model)
+
+The drug-ranking module is **opt-in** and needs a one-time setup to clone the external model repo and download artifacts (~5 MB total). The `external/` folder is intentionally **not** committed to this repo (model files belong in their own [pediatric-bt-drug-prediction](https://github.com/otonifrio2812/pediatric-bt-drug-prediction) repo).
+
+```bash
+python tools/drug_ranking_adapter.py --setup        # one-time: clone repo + download artifacts to external/
+python tools/drug_ranking_adapter.py --list-cells   # verify 81 cell lines loaded across 3 cancer types
+python agent/run_demo.py sample_cases/case_003_diffuse_midline_glioma.txt
+```
+
+After `--setup`, the report's "Preclinical Drug Ranking" section shows the Top-N drugs with `P_sens` + 95% CI for DMG (via KNS-42 OFF-DIST surrogate) or skips with an explicit message for medulloblastoma. **If you skip `--setup`**, the agent still completes — the drug section just shows `Status: unavailable` with a hint to run `--setup`. The other 8 pipeline sections (Nemotron reasoning, RAG, trial matching, guardrails, etc.) are unaffected.
+
+## Optional: DICOM / NIfTI advanced imaging
 
 ```bash
 python agent/run_demo.py sample_cases/case_003_diffuse_midline_glioma.txt --medical-study medical_inputs/my_study_or_nii
@@ -99,7 +151,7 @@ python tools/advanced_medical_imaging.py medical_inputs/my_study_or_nii --output
 
 The segmentation and anatomic landmarks are heuristic placeholders, not validated clinical models. Replace with MONAI/nnUNet/atlas registration before any formal research use.
 
-## Autonomous refresh loop
+## Optional: autonomous evidence refresh loop
 
 ```bash
 python tools/autonomous_refresh_loop.py --once
