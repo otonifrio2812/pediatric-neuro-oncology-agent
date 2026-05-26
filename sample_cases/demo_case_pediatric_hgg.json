@@ -1,0 +1,37 @@
+{
+  "_comment": "去識別化模擬病例 / De-identified SIMULATED case for demo & testing only. NOT a real patient. No name, MRN, DOB, or identifying information.",
+
+  "age": 10,
+  "sex": "unspecified",
+  "tumor_type": "pediatric high-grade glioma (anaplastic astrocytoma)",
+  "tumor_location": "right cerebral hemisphere, frontal lobe (supratentorial, non-midline)",
+
+  "imaging_description": "MRI: a heterogeneously enhancing right frontal lobe mass with surrounding vasogenic edema, central necrosis, and mild mass effect on the right lateral ventricle. No midline/brainstem involvement. No leptomeningeal spread on current sequences.",
+
+  "molecular_markers": {
+    "H3K27M": "negative",
+    "IDH1_IDH2": "wild-type",
+    "BRAF_V600E": "negative",
+    "BRAF_fusion": "negative",
+    "ATRX": "retained",
+    "TP53": "mutated",
+    "MGMT_promoter": "unmethylated",
+    "EGFR_amplification": "negative",
+    "note": "Molecular workup complete. Profile consistent with pediatric-type high-grade glioma, IDH-wildtype, H3-wildtype."
+  },
+
+  "pathology": "anaplastic astrocytoma (WHO grade 3); pediatric-type diffuse high-grade glioma, IDH-wildtype, H3-wildtype (biopsy confirmed)",
+
+  "symptoms": [
+    "new-onset focal seizures (left arm)",
+    "morning headache",
+    "mild left-hand weakness",
+    "6 weeks of progressive symptoms"
+  ],
+
+  "previous_treatment": "diagnostic biopsy completed; no resection or adjuvant therapy yet",
+
+  "family_question": "Is this tumor operable, and what treatment options give the best chance while protecting our child's movement and speech?",
+
+  "deidentification_note": "No patient name, MRN, or date of birth included. This is a synthetic demo case for testing only."
+}

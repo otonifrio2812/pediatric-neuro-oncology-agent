@@ -19,6 +19,7 @@ Expected API in that repo:
 from __future__ import annotations
 
 import os
+import re
 import sys
 import json
 import subprocess
@@ -325,6 +326,19 @@ def infer_cancer_type_from_case(
         if picked:
             return picked
 
+    # HGG identifiers → Glioblastoma category (where KNS-42 lives).
+    # Must come BEFORE generic "glioma"/"astrocytoma" check so HGG cases aren't
+    # routed to the LGG/Glioma surrogate path. Lets choose_surrogate_cell_line
+    # trigger the pediatric branch (age<18 → KNS-42 PEDIATRIC-SURROGATE).
+    if any(k in text for k in [
+        "high-grade glioma", "high grade glioma", "hgg",
+        "anaplastic astrocytoma", "anaplastic glioma",
+        "who grade 3", "who grade 4", "grade 4",
+    ]):
+        picked = choose(["Glioblastoma"])
+        if picked:
+            return picked
+
     if any(k in text for k in ["glioma", "astrocytoma", "oligodendroglioma"]):
         # Default glioma → Glioma category first; choose_surrogate_cell_line picks Hs-683.
         picked = choose(["Glioma", "Glioblastoma"])
@@ -413,8 +427,20 @@ def choose_surrogate_cell_line(
 
     # 2) Weighted decision tree per cancer type.
     if cancer_type == "Glioblastoma":
-        is_dmg_marker = ("h3k27" in markers or "h3 k27" in markers
-                         or "diffuse midline" in text or "dipg" in text or "dmg" in text)
+        # H3K27M polarity check: must distinguish "h3k27m positive" from "h3k27m negative".
+        # Look for h3k27[m] followed by a value token; treat negative qualifiers as NOT-DMG.
+        _NEG_VALS = {"negative", "neg", "wild-type", "wildtype", "wt", "absent", "no", "not", "not_detected"}
+        h3k27_match = re.search(r"h3\s*k27m?[\s:=,;]+(\S+)", markers)
+        is_h3k27_positive_in_markers = False
+        if h3k27_match:
+            val = h3k27_match.group(1).strip(" -_/,.;").lower()
+            is_h3k27_positive_in_markers = val not in _NEG_VALS
+        # Text-based DMG indicators: clinical narrative phrasing implies positive context.
+        is_dmg_in_text = any(k in text for k in [
+            "diffuse midline", "dipg", "dmg",
+            "h3 k27-altered", "h3k27-altered", "h3 k27 altered",
+        ])
+        is_dmg_marker = is_h3k27_positive_in_markers or is_dmg_in_text
         is_pontine = ("pons" in location or "pontine" in location or "brainstem" in location
                       or "pons" in text)
         is_pediatric = (0 <= age < 18)

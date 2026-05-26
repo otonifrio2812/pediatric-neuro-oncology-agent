@@ -118,19 +118,24 @@ class MedicalGuardrails:
                     "and is not a treatment recommendation. "
                     "Missing phrases auto-appended: " + ", ".join(missing) + "."
                 )
-            # KNS-42 usage must coincide with OFF-DISTRIBUTION warning.
+            # KNS-42 usage must coincide with EITHER an OFF-DISTRIBUTION warning
+            # (used for DMG/DIPG cases where KNS-42 is the closest available surrogate)
+            # OR a PEDIATRIC-SURROGATE warning (used for non-DMG pediatric HGG cases
+            # where KNS-42 is the only pediatric CNS line in the model). Either disclosure
+            # satisfies the policy intent: "KNS-42 selection must be openly labelled as
+            # a surrogate, not a patient-specific match".
             uses_kns42 = ("KNS-42" in safe_text or "SIDM00607" in safe_text)
-            has_offdist = ("OFF-DISTRIBUTION" in safe_text.upper()
-                           or "off-distribution" in safe_text.lower())
-            if uses_kns42 and not has_offdist:
+            upper_text = safe_text.upper()
+            has_offdist = "OFF-DISTRIBUTION" in upper_text or "OFF-DIST" in upper_text
+            has_pediatric_surrogate = "PEDIATRIC-SURROGATE" in upper_text
+            if uses_kns42 and not (has_offdist or has_pediatric_surrogate):
                 annotations.append(
-                    "Policy 7: KNS-42 used as surrogate without OFF-DISTRIBUTION warning; auto-appended."
+                    "Policy 7: KNS-42 used as surrogate without OFF-DIST or PEDIATRIC-SURROGATE warning; auto-appended."
                 )
                 safe_text += (
                     "\n\nGuardrail note (Policy 7 — KNS-42 surrogate): KNS-42 (SIDM00607) "
-                    "is the model's only pediatric CNS cell line. For DMG/DIPG/H3K27M cases "
-                    "it is used OFF-DISTRIBUTION (no DIPG cell line exists in the model). "
-                    "Drug rankings are HYPOTHESIS GENERATION ONLY."
+                    "is the model's only pediatric CNS cell line. It is a SURROGATE, not a "
+                    "patient-specific match. Drug rankings are HYPOTHESIS GENERATION ONLY."
                 )
 
         if GLOBAL_DISCLAIMER.strip() not in safe_text:
