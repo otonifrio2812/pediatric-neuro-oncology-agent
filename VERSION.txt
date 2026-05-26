@@ -1,0 +1,3 @@
+pediatric-neuro-oncology-agent packaged build
+Includes: v3 core + v4 architecture/drug patch + v5 advanced DICOM/NIfTI imaging patch
+Generated for Colab upload as pediatric-neuro-oncology-agent.zip

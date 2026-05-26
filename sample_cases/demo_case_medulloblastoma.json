@@ -1,0 +1,30 @@
+{
+  "_comment": "去識別化模擬病例 / De-identified SIMULATED case for demo & testing only. NOT a real patient. Contains no name, MRN, DOB, or any identifying information.",
+
+  "age": 6,
+  "sex": "unspecified",
+  "tumor_type": "medulloblastoma",
+  "tumor_location": "midline cerebellum (vermis), fourth ventricle region",
+
+  "imaging_description": "MRI: a midline cerebellar / vermian enhancing mass with restricted diffusion on DWI; fourth ventricle compression with mild obstructive hydrocephalus.",
+
+  "molecular_markers": {
+    "status": "pending",
+    "note": "biopsy not yet performed; molecular group (WNT/SHH/Group3/Group4) unknown"
+  },
+
+  "pathology": "pending; imaging favours medulloblastoma",
+
+  "symptoms": [
+    "morning headache",
+    "vomiting",
+    "truncal ataxia",
+    "gait instability"
+  ],
+
+  "previous_treatment": "none",
+
+  "family_question": "Will my child be able to walk and talk normally after surgery, and is chemotherapy needed?",
+
+  "deidentification_note": "No patient name, MRN, or date of birth included. This is a synthetic demo case."
+}

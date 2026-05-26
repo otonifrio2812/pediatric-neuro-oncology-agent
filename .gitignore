@@ -1,0 +1,33 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Secrets — NEVER commit
+.env
+.env.local
+*.pem
+*.key
+
+# Large external model artifacts (cloned at runtime via --setup)
+external/
+
+# Local backup checkpoints (not part of deliverable)
+_checkpoint_*/
+
+# Generated outputs
+outputs/*.md
+outputs/*.npy
+outputs/*.jpg
+outputs/*.png
+
+# Optional inputs / generated caches
+medical_inputs/*
+rag_sources/*.jsonl
+rag_sources/*.json
+logs/*.log
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.claude/
